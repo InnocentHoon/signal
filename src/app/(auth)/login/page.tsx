@@ -45,8 +45,28 @@ function LoginContent() {
     setError('');
 
     try {
-      await signIn('google', { callbackUrl });
-    } catch {
+      const result = await signIn('google', {
+        callbackUrl: '/dashboard',
+        redirect: false,
+      });
+
+      console.log('Google sign-in result:', result);
+
+      if (result?.error) {
+        console.error('Google sign-in error:', result.error);
+        setError(`Google sign-in failed: ${result.error}`);
+        setGoogleLoading(false);
+        return;
+      }
+
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+
+      window.location.href = '/dashboard';
+    } catch (error) {
+      console.error('Google sign-in exception:', error);
       setError('Google sign-in failed. Please try again.');
       setGoogleLoading(false);
     }
@@ -54,6 +74,7 @@ function LoginContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
     setError('');
 
@@ -79,7 +100,9 @@ function LoginContent() {
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl">
-      <h1 className="text-xl font-semibold mb-1">Welcome back</h1>
+      <h1 className="text-xl font-semibold mb-1">
+        Welcome back
+      </h1>
 
       <p className="text-sm text-zinc-500 mb-6">
         Sign in to your SIGNAL account
@@ -87,12 +110,16 @@ function LoginContent() {
 
       {/* Google Sign In */}
       <button
+        type="button"
         onClick={handleGoogleSignIn}
         disabled={googleLoading || loading}
         className="w-full flex items-center justify-center gap-3 bg-white text-zinc-900 font-medium rounded-lg px-4 py-2.5 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
       >
         <GoogleIcon />
-        {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+
+        {googleLoading
+          ? 'Signing in with Google...'
+          : 'Continue with Google'}
       </button>
 
       {/* Divider */}
