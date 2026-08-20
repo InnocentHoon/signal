@@ -14,11 +14,15 @@ const loginSchema = z.object({
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
 
+  // Explicit production secret
+  secret: process.env.NEXTAUTH_SECRET,
+
+  // Allow Vercel/production host
+  trustHost: true,
+
   session: {
     strategy: 'jwt',
   },
-
-  trustHost: true,
 
   pages: {
     signIn: '/login',
@@ -40,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           label: 'Email',
           type: 'email',
         },
+
         password: {
           label: 'Password',
           type: 'password',
@@ -116,13 +121,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async signIn({ user, account }) {
-      console.log(
-        '[AUTH] Sign-in:',
-        account?.provider,
-        user?.email
-      )
+      console.log('[AUTH] Sign-in:', {
+        provider: account?.provider,
+        email: user?.email,
+        userId: user?.id,
+      })
 
       return true
+    },
+
+    async redirect({ url, baseUrl }) {
+      console.log('[AUTH] Redirect:', {
+        url,
+        baseUrl,
+      })
+
+      // Relative URLs
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+
+      // Same-origin URLs
+      try {
+        const requestedUrl = new URL(url)
+
+        if (requestedUrl.origin === baseUrl) {
+          return url
+        }
+      } catch (error) {
+        console.error('[AUTH] Invalid redirect URL:', error)
+      }
+
+      // Safe default
+      return `${baseUrl}/dashboard`
     },
   },
 
